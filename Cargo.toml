@@ -23,7 +23,7 @@ thiserror = "2.0"
 uuid = { version = "1.18.1", features = ["serde"] }
 validator = { version = "0.20.0", features = ["derive"] }
 anyhow = "1.0"
-jsonwebtoken = { version = "10.2.0", features = ["rust_crypto"] }
+jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
 log = "0.4"
 
 [dev-dependencies]
