@@ -1,90 +1,79 @@
-use crate::{Client, Data, Error, ResultBody, Service, Webhook, WebhookType};
+use crate::{ApiVersion, Client, Data, Error, ResultBody, Service, Webhook, WebhookType};
 use log::debug;
 
 impl Client {
     /// Метод для создания вебхуков
     ///
-    /// почему-то метод put
+    /// Требует предварительной настройки `client_id` через `with_client_id()`.
+    /// Метод использует PUT (не POST) — это особенность API Точки.
     pub async fn create_webhook(&self, payload: Webhook) -> Result<Data<Webhook>, Error> {
-        let id = self
-            .client_id
-            .as_deref()
-            .expect("client_id must be set before create_webhook()");
-        debug!(
-            "Creating webhook for client_id {id} with payload: {:?}",
-            payload
-        );
-
+        let id = self.client_id.as_deref().ok_or_else(|| {
+            Error::Config("client_id must be set via with_client_id() before create_webhook()".into())
+        })?;
+        debug!("Creating webhook for client_id {id}");
         self.send::<Data<Webhook>>(
             self.client
-                .put(self.url(Service::Webhook, crate::ApiVersion::V1_0, id))
+                .put(self.url(Service::Webhook, ApiVersion::V1_0, id))
                 .json(&payload),
         )
         .await
     }
+
     /// Метод для изменения URL и типа вебхука
     ///
-    /// почему-то это пост
+    /// Требует предварительной настройки `client_id` через `with_client_id()`.
+    /// Метод использует POST (не PUT) — это особенность API Точки.
     pub async fn edit_webhook(&self, payload: Webhook) -> Result<Data<Webhook>, Error> {
-        let id = self
-            .client_id
-            .as_deref()
-            .expect("client_id must be set before edit_webhook()");
-        debug!(
-            "Editing webhook for client_id {id} with payload: {:?}",
-            payload
-        );
+        let id = self.client_id.as_deref().ok_or_else(|| {
+            Error::Config("client_id must be set via with_client_id() before edit_webhook()".into())
+        })?;
+        debug!("Editing webhook for client_id {id}");
         self.send::<Data<Webhook>>(
             self.client
-                .post(self.url(Service::Webhook, crate::ApiVersion::V1_0, id))
+                .post(self.url(Service::Webhook, ApiVersion::V1_0, id))
                 .json(&payload),
         )
         .await
     }
+
     /// Метод для получения списка вебхуков приложения
     pub async fn get_webhooks(&self) -> Result<Data<Webhook>, Error> {
-        let id = self
-            .client_id
-            .as_deref()
-            .expect("client_id must be set before get_webhooks()");
+        let id = self.client_id.as_deref().ok_or_else(|| {
+            Error::Config("client_id must be set via with_client_id() before get_webhooks()".into())
+        })?;
         debug!("Fetching webhooks for client_id {id}");
-        self.send::<Data<Webhook>>(self.client.get(self.url(
-            Service::Webhook,
-            crate::ApiVersion::V1_0,
-            id,
-        )))
+        self.send::<Data<Webhook>>(
+            self.client
+                .get(self.url(Service::Webhook, ApiVersion::V1_0, id)),
+        )
         .await
     }
+
     /// Метод для удаления вебхука
     pub async fn delete_webhook(&self) -> Result<Data<ResultBody>, Error> {
-        let id = self
-            .client_id
-            .as_deref()
-            .expect("client_id must be set before delete_webhook()");
+        let id = self.client_id.as_deref().ok_or_else(|| {
+            Error::Config("client_id must be set via with_client_id() before delete_webhook()".into())
+        })?;
         debug!("Deleting webhook for client_id {id}");
-        self.send::<Data<ResultBody>>(self.client.delete(self.url(
-            Service::Webhook,
-            crate::ApiVersion::V1_0,
-            id,
-        )))
+        self.send::<Data<ResultBody>>(
+            self.client
+                .delete(self.url(Service::Webhook, ApiVersion::V1_0, id)),
+        )
         .await
     }
-    /// Метод для проверки отпраки хука
+
+    /// Метод для проверки отправки вебхука
     pub async fn send_webhook(&self, payload: WebhookType) -> Result<Data<ResultBody>, Error> {
-        let id = self
-            .client_id
-            .as_deref()
-            .expect("client_id must be set before send_webhook()");
-        debug!(
-            "Triggering webhook test send for client_id {id} with payload: {:?}",
-            payload
-        );
+        let id = self.client_id.as_deref().ok_or_else(|| {
+            Error::Config("client_id must be set via with_client_id() before send_webhook()".into())
+        })?;
+        debug!("Triggering test webhook send for client_id {id}");
         self.send::<Data<ResultBody>>(
             self.client
                 .post(self.url(
                     Service::Webhook,
-                    crate::ApiVersion::V1_0,
-                    format!("{0}/test_send", id).as_str(),
+                    ApiVersion::V1_0,
+                    format!("{id}/test_send").as_str(),
                 ))
                 .json(&payload),
         )

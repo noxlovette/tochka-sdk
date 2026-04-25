@@ -246,4 +246,42 @@ impl Client {
             }
         }
     }
+
+    /// RU: Скачать бинарный файл (PDF и т.п.) по указанному запросу.
+    /// EN: Download a binary file (PDF etc.) using the given request builder.
+    pub async fn download(&self, req: reqwest::RequestBuilder) -> Result<Vec<u8>, Error> {
+        let request_snapshot = req.try_clone().and_then(|b| b.build().ok());
+        if let Some(snap) = request_snapshot.as_ref() {
+            debug!("Downloading {} {}", snap.method(), snap.url());
+        }
+        let resp = req.bearer_auth(&self.token).send().await.map_err(|e| {
+            if e.is_timeout() {
+                Error::Timeout
+            } else {
+                Error::Network(e.without_url().to_string())
+            }
+        })?;
+
+        let status = resp.status();
+        match status {
+            reqwest::StatusCode::UNAUTHORIZED => return Err(Error::Unauthorized),
+            reqwest::StatusCode::FORBIDDEN => return Err(Error::Forbidden),
+            reqwest::StatusCode::NOT_FOUND => return Err(Error::NotFound),
+            reqwest::StatusCode::TOO_MANY_REQUESTS => return Err(Error::TooManyRequests),
+            code if code.is_server_error() => {
+                let body = resp.text().await.unwrap_or_default();
+                return Err(Error::Server(body));
+            }
+            _ => {}
+        }
+
+        if !status.is_success() {
+            let body = resp.text().await.unwrap_or_default();
+            return Err(Error::Api(body));
+        }
+
+        let bytes = resp.bytes().await.map_err(|e| Error::Network(e.to_string()))?;
+        debug!("Downloaded {} bytes", bytes.len());
+        Ok(bytes.to_vec())
+    }
 }

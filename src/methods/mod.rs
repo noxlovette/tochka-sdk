@@ -1,7 +1,11 @@
 mod account_balance;
 mod accounts;
+mod consents;
 mod customers;
+mod invoices;
 mod payment_links;
 mod payments;
+mod sbp;
 mod statements;
+mod subscriptions;
 mod webhooks;
