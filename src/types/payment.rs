@@ -93,7 +93,7 @@ pub struct PaymentListQuery {
 impl PaymentListQuery {
     pub fn new(customer_code: Option<String>) -> Self {
         Self {
-            customer_code: customer_code,
+            customer_code,
             ..Default::default()
         }
     }
@@ -227,7 +227,7 @@ impl CreatePaymentPayload {
     pub fn new(amount: f64, customer_code: Option<String>, purpose: impl Into<String>) -> Self {
         Self {
             amount,
-            customer_code: customer_code,
+            customer_code,
             purpose: purpose.into(),
             consumer_id: None,
             fail_redirect_url: None,

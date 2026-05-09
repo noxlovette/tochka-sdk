@@ -2,15 +2,15 @@ use crate::{ApiVersion, Error, Jwk, Service, jwt::fetch_jwk};
 use log::debug;
 use std::{any::type_name, time::Duration};
 
-/// RU: Базовый URL продакшн-окружения Tochka API.  
+/// RU: Базовый URL продакшн-окружения Tochka API.
 /// EN: Base Tochka API production URL without version suffix.
 pub const PRODUCTION_BASE: &str = "https://enter.tochka.com/uapi/";
 
-/// RU: Базовый URL песочницы Tochka API.  
+/// RU: Базовый URL песочницы Tochka API.
 /// EN: Base Tochka API sandbox URL without version suffix.
 pub const SANDBOX_BASE: &str = "https://enter.tochka.com/sandbox/v2/";
 
-/// RU: Окружение, в котором выполняются запросы.  
+/// RU: Окружение, в котором выполняются запросы.
 /// EN: Endpoint environment selector.
 #[derive(Clone, Debug, Default)]
 pub enum Environment {
@@ -38,7 +38,7 @@ impl From<String> for Environment {
 }
 
 impl Environment {
-    /// RU: Вернуть базовый URL в зависимости от окружения.  
+    /// RU: Вернуть базовый URL в зависимости от окружения.
     /// EN: Return the base URL for the selected environment.
     pub fn base_url(&self) -> &'static str {
         match self {
@@ -48,7 +48,7 @@ impl Environment {
     }
 }
 
-/// RU: Основной клиент SDK Tochka.  
+/// RU: Основной клиент SDK Tochka.
 /// EN: Main Tochka SDK client.
 #[derive(Clone, Debug)]
 pub struct Client {
@@ -67,7 +67,7 @@ pub struct Client {
 }
 
 impl Client {
-    /// Создать клиента для указанного окружения.  
+    /// Создать клиента для указанного окружения.
     pub async fn new() -> Result<Self, Error> {
         let version = env!("CARGO_PKG_VERSION");
         debug!("Initializing Tochka SDK client v{version}");
@@ -84,18 +84,16 @@ impl Client {
                 debug!("Using production token from TOCHKA_TOKEN");
                 std::env::var("TOCHKA_TOKEN")?
             }
-            Environment::Sandbox => {
-                match std::env::var("TOCHKA_TOKEN") {
-                    Ok(t) => {
-                        debug!("Using provided TOCHKA_TOKEN for sandbox");
-                        t
-                    }
-                    Err(_) => {
-                        debug!("Using sandbox placeholder token");
-                        "sandbox.jwt.token".to_string()
-                    }
+            Environment::Sandbox => match std::env::var("TOCHKA_TOKEN") {
+                Ok(t) => {
+                    debug!("Using provided TOCHKA_TOKEN for sandbox");
+                    t
                 }
-            }
+                Err(_) => {
+                    debug!("Using sandbox placeholder token");
+                    "sandbox.jwt.token".to_string()
+                }
+            },
         };
 
         let jwk = fetch_jwk().await?;
@@ -114,14 +112,14 @@ impl Client {
         Ok(Self {
             client,
             env,
-            token: token.into(),
+            token,
             jwk,
             client_id: None,
             customer_code: None,
         })
     }
 
-    /// RU: Получить customer_code для Business-аккаунта.  
+    /// RU: Получить customer_code для Business-аккаунта.
     ///
     /// Если задана переменная окружения `TOCHKA_CUSTOMER_CODE` (или `CUSTOMER_CODE`), будет использована она. Иначе SDK
     /// выполнит `get_accounts_list`, отфильтрует Business-аккаунты и:
@@ -136,7 +134,7 @@ impl Client {
         Ok(self)
     }
 
-    /// RU: Получить customer_code для Business-аккаунта.  
+    /// RU: Получить customer_code для Business-аккаунта.
     ///
     /// Deprecated: use `with_customer_code` instead.
     #[deprecated(note = "use with_customer_code instead")]
@@ -155,7 +153,7 @@ impl Client {
 }
 
 impl Client {
-    /// RU: Собрать полный URL для сервиса/версии/пути.  
+    /// RU: Собрать полный URL для сервиса/версии/пути.
     /// EN: Build a fully-qualified URL for the given service, version and path.
     pub fn url(&self, service: Service, version: ApiVersion, path: &str) -> String {
         format!(
@@ -169,7 +167,7 @@ impl Client {
 }
 
 impl Client {
-    /// RU: Отправить запрос: добавить авторизацию, проверить HTTP-статусы и десериализовать тело.  
+    /// RU: Отправить запрос: добавить авторизацию, проверить HTTP-статусы и десериализовать тело.
     /// EN: Send a request with auth, map HTTP errors, and deserialize the body.
     pub async fn send<T>(&self, req: reqwest::RequestBuilder) -> Result<T, Error>
     where
@@ -296,7 +294,10 @@ impl Client {
             return Err(Error::Api(body));
         }
 
-        let bytes = resp.bytes().await.map_err(|e| Error::Network(e.to_string()))?;
+        let bytes = resp
+            .bytes()
+            .await
+            .map_err(|e| Error::Network(e.to_string()))?;
         debug!("Downloaded {} bytes", bytes.len());
         Ok(bytes.to_vec())
     }
