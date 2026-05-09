@@ -4,7 +4,7 @@ use tochka_sdk::Client;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenvy::dotenv().ok();
     let client = Client::new().await?;
-    let customer_code = std::env::var("CUSTOMER_CODE")?;
+    let customer_code = std::env::var("TOCHKA_CUSTOMER_CODE")?;
 
     let list = client.get_customers_list().await?;
     println!("All customers:\n{:#?}", list.data.customer);

@@ -3,7 +3,8 @@ use std::collections::HashSet;
 use crate::{Account, AccountPageData, ApiVersion, Client, Data, Error, ExternalType, Service};
 use log::debug;
 
-const CUSTOMER_CODE_ENV: &str = "CUSTOMER_CODE";
+const CUSTOMER_CODE_ENV: &str = "TOCHKA_CUSTOMER_CODE";
+const CUSTOMER_CODE_ENV_LEGACY: &str = "CUSTOMER_CODE";
 
 impl Client {
     /// Метод для получения списка доступных счетов
@@ -30,17 +31,22 @@ impl Client {
     /// Попытаться выбрать customer_code из бизнес-счетов.
     ///
     /// Логика:
-    /// 1) Если указана переменная окружения CUSTOMER_CODE, возвращаем её.
+    /// 1) Если указана переменная окружения TOCHKA_CUSTOMER_CODE (или CUSTOMER_CODE), возвращаем её.
     /// 2) Иначе получаем список счетов, фильтруем только Business и берём уникальные customer_code.
     /// 3) Если найден один — используем его; если ноль или больше одного — возвращаем ошибку конфигурации
-    ///    с подсказкой установить CUSTOMER_CODE вручную.
+    ///    с подсказкой установить TOCHKA_CUSTOMER_CODE вручную.
     pub async fn resolve_business_customer_code(&self) -> Result<String, Error> {
         if let Ok(code) = std::env::var(CUSTOMER_CODE_ENV) {
             debug!("Using customer_code from {CUSTOMER_CODE_ENV} env var");
             return Ok(code);
         }
 
-        debug!("CUSTOMER_CODE not set, resolving via Business accounts");
+        if let Ok(code) = std::env::var(CUSTOMER_CODE_ENV_LEGACY) {
+            debug!("Using customer_code from legacy {CUSTOMER_CODE_ENV_LEGACY} env var");
+            return Ok(code);
+        }
+
+        debug!("{} not set, resolving via Business accounts", CUSTOMER_CODE_ENV);
         let accounts = self.get_accounts_list().await?.data.account;
         select_business_customer_code(&accounts)
     }
@@ -67,12 +73,11 @@ fn select_business_customer_code(accounts: &[Account]) -> Result<String, Error> 
 
     match unique_codes.len() {
         0 => Err(Error::Config(
-            "no Business accounts returned; set CUSTOMER_CODE to pick one".into(),
+            format!("no Business accounts returned; set {} to pick one", CUSTOMER_CODE_ENV),
         )),
         1 => Ok(unique_codes.swap_remove(0)),
         _ => Err(Error::Config(
-            "multiple Business accounts returned; set CUSTOMER_CODE to choose which one to use"
-                .into(),
+            format!("multiple Business accounts returned; set {} to choose which one to use", CUSTOMER_CODE_ENV),
         )),
     }
 }

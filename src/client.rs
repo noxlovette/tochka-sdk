@@ -85,8 +85,16 @@ impl Client {
                 std::env::var("TOCHKA_TOKEN")?
             }
             Environment::Sandbox => {
-                debug!("Using sandbox placeholder token");
-                "sandbox.jwt.token".to_string()
+                match std::env::var("TOCHKA_TOKEN") {
+                    Ok(t) => {
+                        debug!("Using provided TOCHKA_TOKEN for sandbox");
+                        t
+                    }
+                    Err(_) => {
+                        debug!("Using sandbox placeholder token");
+                        "sandbox.jwt.token".to_string()
+                    }
+                }
             }
         };
 
@@ -115,17 +123,25 @@ impl Client {
 
     /// RU: Получить customer_code для Business-аккаунта.  
     ///
-    /// Если задана переменная окружения `CUSTOMER_CODE`, будет использована она. Иначе SDK
+    /// Если задана переменная окружения `TOCHKA_CUSTOMER_CODE` (или `CUSTOMER_CODE`), будет использована она. Иначе SDK
     /// выполнит `get_accounts_list`, отфильтрует Business-аккаунты и:
     /// - если найден один — вернёт его;
-    /// - если найдено несколько — вернёт ошибку конфигурации и предложит установить `CUSTOMER_CODE`.
-    pub async fn with_client_code(mut self) -> Result<Self, Error> {
+    /// - если найдено несколько — вернёт ошибку конфигурации и предложит установить `TOCHKA_CUSTOMER_CODE`.
+    pub async fn with_customer_code(mut self) -> Result<Self, Error> {
         self.customer_code = Some(self.resolve_business_customer_code().await?);
         if let Some(code) = &self.customer_code {
             debug!("Client configured with customer_code {code}");
         }
 
         Ok(self)
+    }
+
+    /// RU: Получить customer_code для Business-аккаунта.  
+    ///
+    /// Deprecated: use `with_customer_code` instead.
+    #[deprecated(note = "use with_customer_code instead")]
+    pub async fn with_client_code(self) -> Result<Self, Error> {
+        self.with_customer_code().await
     }
 
     /// Добоавить client id в клиент. Нужен для вебхуков

@@ -6,7 +6,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenvy::dotenv().ok();
     let client = Client::new().await?;
 
-    let customer_code = std::env::var("CUSTOMER_CODE")?;
+    let customer_code = std::env::var("TOCHKA_CUSTOMER_CODE")?;
     let merchant_id = std::env::var("MERCHANT_ID")?;
     let payment_id = std::env::var("PAYMENT_ID")?;
 

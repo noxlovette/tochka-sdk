@@ -4,7 +4,7 @@ use tochka_sdk::{Client, CreateClosingDocumentPayload, CreateInvoicePayload, Sen
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenvy::dotenv().ok();
 
-    let client = Client::new().await?.with_client_code().await?;
+    let client = Client::new().await?.with_customer_code().await?;
     let customer_code = client.customer_code.clone().unwrap();
 
     // Create an invoice.
